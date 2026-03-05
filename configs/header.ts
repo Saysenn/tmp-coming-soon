@@ -56,7 +56,7 @@ export const siteConfig: HeaderConfig = {
   logoImageSrc: "/logo.png",
 
   // Header layout — "nav" | "cta" | "menu-only"
-  headerType: "menu-only",
+  headerType: "cta",
 
   // Mobile menu style — "drawer" | "dropdown" | "fullscreen"
   mobileMenuType: "drawer",

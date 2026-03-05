@@ -54,7 +54,7 @@ export type CompanyInfo = {
 // ─── Config ───────────────────────────────────────────────────
 
 // Footer layout — switch between: "columns" | "minimal" | "centered" | "brand" | "split" | "info"
-export const footerLayout: FooterLayout = "info";
+export const footerLayout: FooterLayout = "columns";
 
 // ─── Legal links (used by all footer layouts) ─────────────────
 
