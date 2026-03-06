@@ -2,11 +2,14 @@
 
 import { useState, FormEvent } from "react";
 import { formsConfig } from "@/configs/forms";
+import { useCaptcha } from "@/hooks/useCaptcha";
+import CaptchaWidget from "./CaptchaWidget";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
 export default function SubscribeFormInline() {
-  const { showNameField, subscriberCount } = formsConfig.subscribeForm;
+  const { showNameField, subscriberCount, requireCaptcha } = formsConfig.subscribeForm;
+  const { isV3, setWidgetToken, getToken } = useCaptcha();
 
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -18,11 +21,21 @@ export default function SubscribeFormInline() {
     setState("loading");
     setErrorMsg("");
 
+    let captchaToken: string | null = null;
+    if (requireCaptcha) {
+      captchaToken = await getToken("subscribe_form");
+      if (!captchaToken) {
+        setErrorMsg("Please complete the CAPTCHA before submitting.");
+        setState("error");
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/v1/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, ...(showNameField ? { name } : {}) }),
+        body: JSON.stringify({ email, ...(showNameField ? { name } : {}), captchaToken }),
       });
       const data = await res.json();
 
@@ -33,6 +46,7 @@ export default function SubscribeFormInline() {
         setState("success");
         setEmail("");
         setName("");
+        setWidgetToken(null);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
@@ -82,6 +96,15 @@ export default function SubscribeFormInline() {
           </button>
         </div>
       </form>
+
+      {requireCaptcha && !isV3 && (
+        <div className="mt-3">
+          <CaptchaWidget
+            onVerify={setWidgetToken}
+            onExpire={() => setWidgetToken(null)}
+          />
+        </div>
+      )}
 
       {state === "error" && (
         <p className="mt-3 text-sm text-red-600">{errorMsg}</p>

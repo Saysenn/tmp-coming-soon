@@ -3,6 +3,8 @@
 import { useState, FormEvent } from "react";
 import { formsConfig } from "@/configs/forms";
 import { companyInfo } from "@/configs/footer";
+import { useCaptcha } from "@/hooks/useCaptcha";
+import CaptchaWidget from "./CaptchaWidget";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
@@ -32,7 +34,8 @@ function MapPinIcon() {
 }
 
 export default function ContactFormDetailed() {
-  const { showPhone } = formsConfig.contactForm;
+  const { showPhone, requireCaptcha } = formsConfig.contactForm;
+  const { isV3, setWidgetToken, getToken } = useCaptcha();
 
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -53,11 +56,21 @@ export default function ContactFormDetailed() {
     setState("loading");
     setErrorMsg("");
 
+    let captchaToken: string | null = null;
+    if (requireCaptcha) {
+      captchaToken = await getToken("contact_form");
+      if (!captchaToken) {
+        setErrorMsg("Please complete the CAPTCHA before submitting.");
+        setState("error");
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/v1/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, captchaToken: null }),
+        body: JSON.stringify({ ...fields, captchaToken }),
       });
       const data = await res.json();
 
@@ -67,6 +80,7 @@ export default function ContactFormDetailed() {
       } else {
         setState("success");
         setFields({ name: "", email: "", phone: "", message: "" });
+        setWidgetToken(null);
       }
     } catch {
       setErrorMsg("Network error. Please check your connection and try again.");
@@ -211,6 +225,13 @@ export default function ContactFormDetailed() {
                 className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               />
             </div>
+
+            {requireCaptcha && !isV3 && (
+              <CaptchaWidget
+                onVerify={setWidgetToken}
+                onExpire={() => setWidgetToken(null)}
+              />
+            )}
 
             {state === "error" && (
               <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>

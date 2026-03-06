@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { render } from "@react-email/render";
 import SubscribeEmail from "@/emails/SubscribeEmail";
 import { sendEmail, sanitizeInput, validateEmailStrict } from "@/lib/services/mail";
+import { verifyCaptchaToken } from "@/lib/services/captcha";
 import { mailConfig } from "@/configs/mail";
+import { formsConfig } from "@/configs/forms";
 
 type SubscribeFormData = {
   name?: string;
   email: string;
   role?: string;
+  captchaToken?: string | null;
   website?: string; // Honeypot field
 };
 
@@ -70,6 +73,7 @@ export async function POST(request: NextRequest) {
     const email = body.email?.trim();
     const name = body.name ? sanitizeInput(body.name.trim()) : undefined;
     const role = body.role ? sanitizeInput(body.role.trim()) : undefined;
+    const captchaToken = body.captchaToken ?? null;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -82,6 +86,16 @@ export async function POST(request: NextRequest) {
 
     if (name && name.length < 2) {
       return NextResponse.json({ error: "Name must be at least 2 characters" }, { status: 400 });
+    }
+
+    if (formsConfig.subscribeForm.requireCaptcha) {
+      if (!captchaToken) {
+        return NextResponse.json({ error: "Captcha token missing" }, { status: 400 });
+      }
+      const passed = await verifyCaptchaToken(captchaToken, formsConfig.captchaProvider);
+      if (!passed) {
+        return NextResponse.json({ error: "Captcha verification failed" }, { status: 400 });
+      }
     }
 
     const emailComponent = SubscribeEmail({ name, email, role });

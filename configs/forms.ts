@@ -6,6 +6,7 @@
 //  • Switch the subscribe form layout (subscribeFormType)
 //  • Show / hide individual form sections on the page
 //  • Toggle optional fields (phone, name, role)
+//  • Switch CAPTCHA provider and enable/disable per form
 // ============================================================
 
 // ─── Types ────────────────────────────────────────────────────
@@ -19,6 +20,11 @@ export type SubscribeFormType =
   | "card"      // Centered card — name?, email, full-width submit
   | "waitlist"; // Full hero section — bold heading, subscriber count, name + email + role?
 
+export type CaptchaProvider =
+  | "turnstile"      // Cloudflare Turnstile — NEXT_PUBLIC_TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY
+  | "recaptcha-v2"   // Google reCAPTCHA v2 checkbox — NEXT_PUBLIC_RECAPTCHA_SITE_KEY + RECAPTCHA_SECRET_KEY
+  | "recaptcha-v3";  // Google reCAPTCHA v3 invisible — same keys as v2
+
 export type FormsConfig = {
   // ── Which variant to render ───────────────────────────────
   contactFormType: ContactFormType;
@@ -28,11 +34,14 @@ export type FormsConfig = {
   enableContactForm: boolean;
   enableSubscribeForm: boolean;
 
+  // ── CAPTCHA ───────────────────────────────────────────────
+  captchaProvider: CaptchaProvider;
+
   // ── Contact form field options ────────────────────────────
   contactForm: {
     /** Show the phone number field */
     showPhone: boolean;
-    /** Require Cloudflare Turnstile CAPTCHA before submit */
+    /** Require CAPTCHA before submit (uses captchaProvider above) */
     requireCaptcha: boolean;
   };
 
@@ -46,6 +55,8 @@ export type FormsConfig = {
     subscriberCount: number;
     /** Role options shown in the dropdown when showRoleField is true */
     roleOptions: string[];
+    /** Require CAPTCHA before submit (uses captchaProvider above) */
+    requireCaptcha: boolean;
   };
 };
 
@@ -63,6 +74,12 @@ export const formsConfig: FormsConfig = {
   enableContactForm: true,
   enableSubscribeForm: true,
 
+  // ── CAPTCHA provider ─────────────────────────────────────
+  // "turnstile"    → Cloudflare Turnstile (keys: NEXT_PUBLIC_TURNSTILE_SITE_KEY)
+  // "recaptcha-v2" → Google reCAPTCHA v2 checkbox (keys: NEXT_PUBLIC_RECAPTCHA_SITE_KEY)
+  // "recaptcha-v3" → Google reCAPTCHA v3 invisible  (same keys as v2)
+  captchaProvider: "turnstile",
+
   // ── Contact form ─────────────────────────────────────────
   contactForm: {
     showPhone: true,
@@ -74,6 +91,7 @@ export const formsConfig: FormsConfig = {
     showNameField: true,
     showRoleField: false,
     subscriberCount: 1240,
+    requireCaptcha: false,
     roleOptions: [
       "Founder / CEO",
       "Product Manager",

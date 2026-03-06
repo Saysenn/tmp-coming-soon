@@ -2,11 +2,14 @@
 
 import { useState, FormEvent } from "react";
 import { formsConfig } from "@/configs/forms";
+import { useCaptcha } from "@/hooks/useCaptcha";
+import CaptchaWidget from "./CaptchaWidget";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
 export default function SubscribeFormCard() {
-  const { showNameField, subscriberCount } = formsConfig.subscribeForm;
+  const { showNameField, subscriberCount, requireCaptcha } = formsConfig.subscribeForm;
+  const { isV3, setWidgetToken, getToken } = useCaptcha();
 
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -18,11 +21,21 @@ export default function SubscribeFormCard() {
     setState("loading");
     setErrorMsg("");
 
+    let captchaToken: string | null = null;
+    if (requireCaptcha) {
+      captchaToken = await getToken("subscribe_form");
+      if (!captchaToken) {
+        setErrorMsg("Please complete the CAPTCHA before submitting.");
+        setState("error");
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/v1/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, ...(showNameField ? { name } : {}) }),
+        body: JSON.stringify({ email, ...(showNameField ? { name } : {}), captchaToken }),
       });
       const data = await res.json();
 
@@ -33,6 +46,7 @@ export default function SubscribeFormCard() {
         setState("success");
         setEmail("");
         setName("");
+        setWidgetToken(null);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
@@ -102,6 +116,13 @@ export default function SubscribeFormCard() {
             className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
           />
         </div>
+
+        {requireCaptcha && !isV3 && (
+          <CaptchaWidget
+            onVerify={setWidgetToken}
+            onExpire={() => setWidgetToken(null)}
+          />
+        )}
 
         {state === "error" && (
           <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>

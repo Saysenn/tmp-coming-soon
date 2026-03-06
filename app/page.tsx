@@ -1,9 +1,11 @@
 import { formsConfig } from "@/configs/forms";
 import ContactForm from "@/components/forms/ContactForm";
 import SubscribeForm from "@/components/forms/SubscribeForm";
+import CaptchaProviderWrapper from "@/components/forms/CaptchaProviderWrapper";
 
 export default function Home() {
   return (
+    <CaptchaProviderWrapper>
     <main className="flex flex-col gap-24 py-20 px-4">
       {/* ── Subscribe section ──────────────────────────────── */}
       {formsConfig.enableSubscribeForm && (
@@ -27,5 +29,6 @@ export default function Home() {
         </section>
       )}
     </main>
+    </CaptchaProviderWrapper>
   );
 }

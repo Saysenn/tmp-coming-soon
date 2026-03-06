@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@marsidev/react-turnstile": "^1.4.2",
     "@react-email/components": "^1.0.8",
     "@react-email/render": "^2.0.4",
     "@types/nodemailer": "^7.0.11",
@@ -16,6 +17,8 @@
     "nodemailer": "^8.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-google-recaptcha": "^3.1.0",
+    "react-google-recaptcha-v3": "^1.11.0",
     "resend": "^6.9.3"
   },
   "devDependencies": {
@@ -23,6 +26,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-google-recaptcha": "^2.1.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",

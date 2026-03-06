@@ -2,6 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import { formsConfig } from "@/configs/forms";
+import { useCaptcha } from "@/hooks/useCaptcha";
+import CaptchaWidget from "./CaptchaWidget";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
@@ -12,7 +14,8 @@ const benefits = [
 ];
 
 export default function SubscribeFormWaitlist() {
-  const { showNameField, showRoleField, subscriberCount, roleOptions } = formsConfig.subscribeForm;
+  const { showNameField, showRoleField, subscriberCount, roleOptions, requireCaptcha } = formsConfig.subscribeForm;
+  const { isV3, setWidgetToken, getToken } = useCaptcha();
 
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -25,6 +28,16 @@ export default function SubscribeFormWaitlist() {
     setState("loading");
     setErrorMsg("");
 
+    let captchaToken: string | null = null;
+    if (requireCaptcha) {
+      captchaToken = await getToken("subscribe_form");
+      if (!captchaToken) {
+        setErrorMsg("Please complete the CAPTCHA before submitting.");
+        setState("error");
+        return;
+      }
+    }
+
     try {
       const res = await fetch("/api/v1/subscribe", {
         method: "POST",
@@ -33,6 +46,7 @@ export default function SubscribeFormWaitlist() {
           email,
           ...(showNameField ? { name } : {}),
           ...(showRoleField && role ? { role } : {}),
+          captchaToken,
         }),
       });
       const data = await res.json();
@@ -45,6 +59,7 @@ export default function SubscribeFormWaitlist() {
         setEmail("");
         setName("");
         setRole("");
+        setWidgetToken(null);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
@@ -175,6 +190,13 @@ export default function SubscribeFormWaitlist() {
               ))}
             </select>
           </div>
+        )}
+
+        {requireCaptcha && !isV3 && (
+          <CaptchaWidget
+            onVerify={setWidgetToken}
+            onExpire={() => setWidgetToken(null)}
+          />
         )}
 
         {state === "error" && (

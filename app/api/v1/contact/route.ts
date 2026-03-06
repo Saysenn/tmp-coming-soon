@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { render } from "@react-email/render";
 import ContactFormEmail from "@/emails/ContactFormEmail";
 import { sendEmail, sanitizeInput, validateEmailStrict } from "@/lib/services/mail";
+import { verifyCaptchaToken } from "@/lib/services/captcha";
 import { mailConfig } from "@/configs/mail";
+import { formsConfig } from "@/configs/forms";
 
 type ContactFormData = {
   name: string;
@@ -65,20 +67,6 @@ Sent from the contact form.
   `.trim();
 }
 
-// ─── Turnstile helper ─────────────────────────────────────────
-
-type TurnstileResponse = { success: boolean; "error-codes"?: string[] };
-
-async function verifyCaptcha(token: string, secret: string): Promise<boolean> {
-  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ secret, response: token }),
-  });
-  const data: TurnstileResponse = await res.json();
-  return data.success;
-}
-
 // ─── Handler ─────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
@@ -124,12 +112,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: emailValidation.error }, { status: 400 });
     }
 
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
-    if (turnstileSecret && !turnstileSecret.includes("your_")) {
+    if (formsConfig.contactForm.requireCaptcha) {
       if (!captchaToken) {
         return NextResponse.json({ error: "Captcha token missing" }, { status: 400 });
       }
-      const passed = await verifyCaptcha(captchaToken, turnstileSecret);
+      const passed = await verifyCaptchaToken(captchaToken, formsConfig.captchaProvider);
       if (!passed) {
         return NextResponse.json({ error: "Captcha verification failed" }, { status: 400 });
       }

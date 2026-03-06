@@ -1,7 +1,7 @@
 # Forms Usage
 
 All form customization lives in two files:
-- **`configs/forms.ts`** — which layout to show, field toggles, feature flags
+- **`configs/forms.ts`** — which layout to show, field toggles, CAPTCHA provider, feature flags
 - **`configs/mail.ts`** — which email provider to use and where to deliver submissions
 
 ---
@@ -229,6 +229,55 @@ To preview templates locally, run `npx react-email dev` (renders a preview UI at
 
 ---
 
+## CAPTCHA
+
+All five form variants support CAPTCHA. One provider is active at a time, set in `configs/forms.ts`.
+
+### Enable CAPTCHA
+
+```ts
+// configs/forms.ts
+captchaProvider: "turnstile",      // active provider (see below)
+
+contactForm: {
+  requireCaptcha: true,            // enable on contact form
+},
+subscribeForm: {
+  requireCaptcha: true,            // enable on subscribe form
+},
+```
+
+### Provider options
+
+| Value | Widget | Env vars required |
+|-------|--------|-------------------|
+| `"turnstile"` | Cloudflare Turnstile checkbox (recommended) | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` |
+| `"recaptcha-v2"` | Google reCAPTCHA v2 checkbox | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` + `RECAPTCHA_SECRET_KEY` |
+| `"recaptcha-v3"` | Google reCAPTCHA v3 invisible | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` + `RECAPTCHA_SECRET_KEY` |
+
+**Turnstile** keys are already in `.env.local`. For reCAPTCHA, get keys at [google.com/recaptcha/admin](https://www.google.com/recaptcha/admin).
+
+### How it works
+
+- **Turnstile / reCAPTCHA v2** — a visible widget renders inside the form. The user solves it; the token is sent with the submission.
+- **reCAPTCHA v3** — invisible. The token is obtained programmatically on submit via `executeRecaptcha()`. No user interaction needed.
+- The server verifies the token against the provider's API before processing the form. A score threshold of `0.5` is applied for v3.
+- When `requireCaptcha: false`, no widget is shown and no server verification runs.
+
+### Env vars
+
+```
+# Cloudflare Turnstile
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
+TURNSTILE_SECRET_KEY=...
+
+# Google reCAPTCHA (v2 or v3, same keys)
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=...
+RECAPTCHA_SECRET_KEY=...
+```
+
+---
+
 ## Security
 
 Both API routes include:
@@ -237,7 +286,7 @@ Both API routes include:
 - **Honeypot field** — invisible `website` field; filled = bot, silently rejected
 - **Email validation** — blocks 40+ disposable domains, test addresses, and suspicious patterns
 - **Input sanitization** — HTML entity encoding on all string inputs to prevent XSS in email bodies
-- **Cloudflare Turnstile** (optional) — set `TURNSTILE_SECRET_KEY` + `NEXT_PUBLIC_TURNSTILE_SITE_KEY` to enable CAPTCHA on the contact form
+- **CAPTCHA** (optional) — Turnstile, reCAPTCHA v2, or reCAPTCHA v3; enable per-form via `configs/forms.ts`
 
 ---
 
