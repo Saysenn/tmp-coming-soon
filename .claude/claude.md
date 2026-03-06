@@ -97,6 +97,14 @@ Input helpers: `toDateInput` (ISO → `<input type="date">` value), `toIntInput`
   - `useQueryClient` — import from `@tanstack/react-query` directly
   - `isAxiosError` from `axios` is acceptable for error type-checking only
 
+# Documentation
+
+- **Always create docs** for any new feature, config file, API route, or reusable component system
+- Docs live in `docs/` — one file per feature area (e.g. `docs/FORMS.md`, `docs/MAIL.md`)
+- Doc format: quick-start first → variant/options table → API reference → file structure
+- Update existing docs in `docs/` if the feature touches them
+- Docs are non-negotiable: if you built it, document it
+
 # Core Principles
 
 - **Simplicity First**: Make every change as simple as possible. Impact minimal code.
